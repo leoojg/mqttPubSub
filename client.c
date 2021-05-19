@@ -2,6 +2,13 @@
 
 int main(int argc, char* argv[])
 {
+    if(argc < 2) {
+        printf("Argumentos insuficientes, informe o ID do roteador a ser instanciado\n");
+        return 1;
+    }
+    strcpy(CLIENTID, argv[1]);
+	strcat(TOPIC, TOPIC_STR);
+	strcat(TOPIC, CLIENTID);
 	MQTTAsync client;
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;
@@ -47,6 +54,7 @@ int main(int argc, char* argv[])
 
 	do 
 	{
+        // connectToTopic(client, "topic23");
 		ch = getchar();
 	} while (ch!='Q' && ch != 'q');
 
