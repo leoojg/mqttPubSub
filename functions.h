@@ -46,7 +46,7 @@ void connlost(void *context, char *cause) {
 	}
 }
 
-void requestMessage(message){
+void requestMessage(char *message){
 	printf("requestMessage: %s",message);
 }
 
