@@ -46,16 +46,43 @@ void connlost(void *context, char *cause) {
 	}
 }
 
-void requestMessage(char *message){
-	printf("requestMessage: %s",(char*)message);
+void requestMessage(int message){
+	if(message < MAX_CLIENTS && message > 0){
+		for(int i; i < MAX_CLIENTS; i++){
+			if(i == message){//send message to topicmessage to confirm conversation request
+			connectToTopic(client, "topicmessage");
+			pubmsg.payload = 0; //ID of conversation session
+			pubmsg.payloadlen = (int)strlen(0);
+			pubmsg.qos = QOS;
+			pubmsg.retained = 0;
+			//deliveredtoken = 0;
+			}
+		}
+	}else{//if not a conversation request message, time to check if this is a confirmation message
+		connectToTopic(client, "conversationtopic");
+		pubmsg.payload = "Client connected"; //Confirmation of conversation topic connection
+		pubmsg.payloadlen = (int)strlen(0);
+		pubmsg.qos = QOS;
+		pubmsg.retained = 0;
+		if((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS){//code from MQTTClient_publish_async.c
+			rc = EXIT_FAILURE;
+		}else{
+			while(deliveredtoken != token){
+				#if defined(_WIN32)
+						Sleep(100);
+				#else
+						usleep(10000L);
+				#endif
+		//deliveredtoken = 0;
+	}
 }
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message) {
     printf("Message arrived\n");
-    printf("     topic: %s\n %s", topicName, TOPIC);
+    printf("     topic: %s\n", topicName);
     printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
-	if(strcmp(topicName,TOPIC) != 0){
-		requestMessage((char*)message->payload);
+	if(strcmp(topicName,TOPIC) != 0){ //verifies if the message received is from the control_topic
+		//requestMessage((int)message->payload); //function to verify if this is a conversation request message or a confirmation message
 	}
     MQTTAsync_freeMessage(&message);
     MQTTAsync_free(topicName);
