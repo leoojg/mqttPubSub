@@ -107,3 +107,7 @@ void onConnect(void* context, MQTTAsync_successData* response)
 	}
 }
 
+void menu(int id){
+	printf("User %d\n", id);
+	printf("Type the ID you wanna chat with");
+}
