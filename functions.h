@@ -47,7 +47,7 @@ void connlost(void *context, char *cause) {
 }
 
 void requestMessage(char *message){
-	printf("requestMessage: %s",message);
+	printf("requestMessage: %s",(char*)message);
 }
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message) {
