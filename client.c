@@ -3,7 +3,7 @@
 int main(int argc, char* argv[])
 {
     if(argc < 2) {
-        printf("Argumentos insuficientes, informe o ID do roteador a ser instanciado\n");
+        printf("Argumentos insuficientes, informe o ID do user a ser instanciado\n");
         return 1;
     }
     strcpy(CLIENTID, argv[1]);

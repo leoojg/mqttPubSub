@@ -46,11 +46,17 @@ void connlost(void *context, char *cause) {
 	}
 }
 
+void requestMessage(message){
+	printf("requestMessage: %s",message);
+}
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message) {
     printf("Message arrived\n");
     printf("     topic: %s\n", topicName);
     printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
+	if(strcmp(topicName,TOPIC) != 0){
+		requestMessage((char*)payload);
+	}
     MQTTAsync_freeMessage(&message);
     MQTTAsync_free(topicName);
     return 1;
