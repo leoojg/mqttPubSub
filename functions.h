@@ -52,7 +52,7 @@ void requestMessage(char *message){
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message) {
     printf("Message arrived\n");
-    printf("     topic: %s\n", topicName);
+    printf("     topic: %s\n %s", topicName, TOPIC);
     printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
 	if(strcmp(topicName,TOPIC) != 0){
 		requestMessage((char*)message->payload);
