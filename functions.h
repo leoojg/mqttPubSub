@@ -55,7 +55,7 @@ int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *me
     printf("     topic: %s\n", topicName);
     printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
 	if(strcmp(topicName,TOPIC) != 0){
-		requestMessage((char*)payload);
+		requestMessage((char*)message->payload);
 	}
     MQTTAsync_freeMessage(&message);
     MQTTAsync_free(topicName);
