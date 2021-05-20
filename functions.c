@@ -19,47 +19,45 @@ void connlost(void *context, char *cause) {
 }
 
 int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message) {
-	if(strcmp(topicName, TOPIC) != 0){ //verifies if the message received is in the control_topic
+	if(strcmp(topicName, TOPIC) == 0){ //verifies if the message received is in the control_topic
 		/*
 			ID -> string to int
 			Se a mensagem for um ID -> criar novo topico de conversa e enviar mensagem ao topico de controle do client que solicitou, 
 				o id proprio para estabelecer conversasão
 			Se for um topico de conversa -> Fazer publish no topico e adicionar "salvar" topico como conhecido
 		*/ 
-		// requestMessage((int)message->payload); //function to verify if this is a conversation request message or a confirmation message
-		// iniciar conversation -> ""
-
 		int client_id_conversation = toInt((char*)message->payload);
 		if (conversations[client_id_conversation] == 0) {
-			conversations[client_id_conversation] = createId(toInt(CLIENTID), client_id_conversation); // id_topico_conversa
+			conversations[client_id_conversation] = createId(toInt(CLIENTID), client_id_conversation);
 
-
-			char conversation_id[30];
-			sprintf(conversation_id, "%d", client_id_conversation);
+			char conversation_id[30], conversation_topic_id[30], conversation_topic[30] = CONVERSATION_STR;
+			sprintf(conversation_id, "%d", conversations[client_id_conversation]);
 
 			MQTTAsync client = (MQTTAsync)context;
 			MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 			MQTTAsync_message pubmsg = MQTTAsync_message_initializer;
 			int rc;
-
-			connectToTopic(client, strcat(CONVERSATION_STR, conversation_id));
+			strcat(conversation_topic, conversation_id);
+			connectToTopic(client, conversation_topic);
 			
-			printf("Successful connection with client %s\n", (char*)message->payload);
+			printf("Successful connection with client%d\n", client_id_conversation);
 			opts.onSuccess = onSend;
 			opts.onFailure = onSendFailure;
 			opts.context = client;
 
-			strcpy(pubmsg.payload, CLIENTID);
+			pubmsg.payload =CLIENTID;
 			pubmsg.payloadlen = (int)strlen(CLIENTID);
 			pubmsg.qos = QOS;
 			pubmsg.retained = 0;
-			if ((rc = MQTTAsync_sendMessage(client, TOPIC, &pubmsg, &opts)) != MQTTASYNC_SUCCESS) {
+			strcpy(conversation_topic_id, TOPIC_STR);
+			strcat(conversation_topic_id, (char*)message->payload);
+			if ((rc = MQTTAsync_sendMessage(client, conversation_topic_id, &pubmsg, &opts)) != MQTTASYNC_SUCCESS) {
 				printf("Failed to start sendMessage, return code %d\n", rc);
 				exit(EXIT_FAILURE);
 			}
 		}
 	} else {
-		printf("Message arrived\n");
+		printf("\nMessage arrived\n");
     	printf("     topic: %s\n", topicName);
 		printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
 	}
@@ -119,10 +117,6 @@ void onSend(void* context, MQTTAsync_successData* response) {
 	opts.onSuccess = onDisconnect;
 	opts.onFailure = onDisconnectFailure;
 	opts.context = client;
-	if ((rc = MQTTAsync_disconnect(client, &opts)) != MQTTASYNC_SUCCESS) {
-		printf("Failed to start disconnect, return code %d\n", rc);
-		exit(EXIT_FAILURE);
-	}
 }
 
 
@@ -144,15 +138,19 @@ void onConnect(void* context, MQTTAsync_successData* response) {
 }
 
 void menu(int id) {
-	printf("User %d\n", id);
-	printf("Type the ID you wanna chat with");
+    printf("+-------------------------------------------------------+\n");
+    printf("|\t\t\tCLIENT [%d]\t\t\t|\n", id);
+    printf("+-------------------------------------------------------+\n");
+    printf("|1 - Realizar conexão a outro client\t\t\t|\n");
+    printf("|2 - Enviar mensagem\t\t\t\t\t|\n");
+    printf("|0 - Sair\t\t\t\t\t\t|\n");
+    printf("|-> ");
 }
 
 void connectToTopic(MQTTAsync client, char topic[]) {
 	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
 	int rc;
-	printf("Subscribing to topic %s\nfor client %s using QoS%d\n\n"
-           "Press Q<Enter> to quit\n\n", topic, CLIENTID, QOS);
+	printf("Subscribing to topic %s\nfor client %s using QoS%d\n", topic, CLIENTID, QOS);
 	opts.onSuccess = onSubscribe;
 	opts.onFailure = onSubscribeFailure;
 	opts.context = client;

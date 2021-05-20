@@ -2,13 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include "MQTTAsync.h"
-
-#if !defined(_WIN32)
 #include <unistd.h>
-#else
-#include <windows.h>
-#endif
+#include "MQTTAsync.h"
 
 #if defined(_WRS_KERNEL)
 #include <OsWrapper.h>
@@ -20,14 +15,16 @@
 #define PAYLOAD    			"Hello World!"
 #define QOS        			1
 #define TIMEOUT     		10000L
-#define MAX_CLIENTS 		200
+#define MAX_CLIENTS 		20
+#define MAX_SIZE_CHAR		20
+#define MESSAGE_SIZE		200
 
 int disc_finished = 0;
 int subscribed = 0;
 int finished = 0;
 
-char CLIENTID[20];
-char TOPIC[20];
+char CLIENTID[MAX_SIZE_CHAR];
+char TOPIC[MAX_SIZE_CHAR];
 char conversations[MAX_CLIENTS];
 
 void connectToTopic(MQTTAsync client, char topic[]);
