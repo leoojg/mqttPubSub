@@ -1,4 +1,4 @@
-#include "functions.h"
+#include "functions.c"
 
 int main(int argc, char* argv[])
 {
@@ -9,6 +9,8 @@ int main(int argc, char* argv[])
     strcpy(CLIENTID, argv[1]);
 	strcat(TOPIC, TOPIC_STR);
 	strcat(TOPIC, CLIENTID);
+	memset(conversations, 0, sizeof(conversations));
+	
 	MQTTAsync client;
 	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
 	MQTTAsync_disconnectOptions disc_opts = MQTTAsync_disconnectOptions_initializer;

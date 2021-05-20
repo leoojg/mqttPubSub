@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include "MQTTAsync.h"
 
 #if !defined(_WIN32)
@@ -13,12 +14,13 @@
 #include <OsWrapper.h>
 #endif
 
-#define ADDRESS     "tcp://localhost:1883"
-#define TOPIC_STR	"topic"
-#define PAYLOAD     "Hello World!"
-#define QOS         1
-#define TIMEOUT     10000L
-#define MAX_CLIENTS 20
+#define ADDRESS     		"tcp://localhost:1883"
+#define TOPIC_STR			"topic"
+#define CONVERSATION_STR	"conversation"
+#define PAYLOAD    			"Hello World!"
+#define QOS        			1
+#define TIMEOUT     		10000L
+#define MAX_CLIENTS 		200
 
 int disc_finished = 0;
 int subscribed = 0;
@@ -26,132 +28,20 @@ int finished = 0;
 
 char CLIENTID[20];
 char TOPIC[20];
+char conversations[MAX_CLIENTS];
 
-void connlost(void *context, char *cause) {
-	MQTTAsync client = (MQTTAsync)context;
-	MQTTAsync_connectOptions conn_opts = MQTTAsync_connectOptions_initializer;
-	int rc;
-
-	printf("\nConnection lost\n");
-	if (cause)
-		printf("     cause: %s\n", cause);
-
-	printf("Reconnecting\n");
-	conn_opts.keepAliveInterval = 20;
-	conn_opts.cleansession = 1;
-	if ((rc = MQTTAsync_connect(client, &conn_opts)) != MQTTASYNC_SUCCESS)
-	{
-		printf("Failed to start connect, return code %d\n", rc);
-		finished = 1;
-	}
-}
-
-void requestMessage(int message){
-	if(message < MAX_CLIENTS && message > 0){
-		for(int i; i < MAX_CLIENTS; i++){
-			if(i == message){//send message to topicmessage to confirm conversation request
-			connectToTopic(client, "topicmessage");
-			pubmsg.payload = 0; //ID of conversation session
-			pubmsg.payloadlen = (int)strlen(0);
-			pubmsg.qos = QOS;
-			pubmsg.retained = 0;
-			//deliveredtoken = 0;
-			}
-		}
-	}else{//if not a conversation request message, time to check if this is a confirmation message
-		connectToTopic(client, "conversationtopic");
-		pubmsg.payload = "Client connected"; //Confirmation of conversation topic connection
-		pubmsg.payloadlen = (int)strlen(0);
-		pubmsg.qos = QOS;
-		pubmsg.retained = 0;
-		if((rc = MQTTClient_publishMessage(client, TOPIC, &pubmsg, &token)) != MQTTCLIENT_SUCCESS){//code from MQTTClient_publish_async.c
-			rc = EXIT_FAILURE;
-		}else{
-			while(deliveredtoken != token){
-				#if defined(_WIN32)
-						Sleep(100);
-				#else
-						usleep(10000L);
-				#endif
-		//deliveredtoken = 0;
-	}
-}
-
-int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message) {
-    printf("Message arrived\n");
-    printf("     topic: %s\n", topicName);
-    printf("   message: %.*s\n", message->payloadlen, (char*)message->payload);
-	if(strcmp(topicName,TOPIC) != 0){ //verifies if the message received is from the control_topic
-		//requestMessage((int)message->payload); //function to verify if this is a conversation request message or a confirmation message
-	}
-    MQTTAsync_freeMessage(&message);
-    MQTTAsync_free(topicName);
-    return 1;
-}
-
-void onDisconnectFailure(void* context, MQTTAsync_failureData* response) {
-	printf("Disconnect failed, rc %d\n", response->code);
-	disc_finished = 1;
-}
-
-void onDisconnect(void* context, MQTTAsync_successData* response) {
-	printf("Successful disconnection\n");
-	disc_finished = 1;
-}
-
-void onSubscribe(void* context, MQTTAsync_successData* response) {
-	printf("Subscribe succeeded\n");
-	subscribed = 1;
-}
-
-void onSubscribeFailure(void* context, MQTTAsync_failureData* response) {
-	printf("Subscribe failed, rc %d\n", response->code);
-	finished = 1;
-}
-
-
-void onConnectFailure(void* context, MQTTAsync_failureData* response) {
-	printf("Connect failed, rc %d\n%s\n", response->code, CLIENTID);
-	finished = 1;
-}
-
-
-void onConnect(void* context, MQTTAsync_successData* response) {
-	MQTTAsync client = (MQTTAsync)context;
-	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	int rc;
-
-	printf("Successful connection\n");
-
-	printf("Subscribing to topic %s\nfor client %s using QoS%d\n\n"
-           "Press Q<Enter> to quit\n\n", TOPIC, CLIENTID, QOS);
-	opts.onSuccess = onSubscribe;
-	opts.onFailure = onSubscribeFailure;
-	opts.context = client;
-	if ((rc = MQTTAsync_subscribe(client, TOPIC, QOS, &opts)) != MQTTASYNC_SUCCESS)
-	{
-		printf("Failed to start subscribe, return code %d\n", rc);
-		finished = 1;
-	}
-}
-
-void menu(int id) {
-	printf("User %d\n", id);
-	printf("Type the ID you wanna chat with");
-}
-
-void connectToTopic(MQTTAsync client, char topic[]) {
-	MQTTAsync_responseOptions opts = MQTTAsync_responseOptions_initializer;
-	int rc;
-	printf("Subscribing to topic %s\nfor client %s using QoS%d\n\n"
-           "Press Q<Enter> to quit\n\n", topic, CLIENTID, QOS);
-	opts.onSuccess = onSubscribe;
-	opts.onFailure = onSubscribeFailure;
-	opts.context = client;
-	if ((rc = MQTTAsync_subscribe(client, topic, QOS, &opts)) != MQTTASYNC_SUCCESS)
-	{
-		printf("Failed to start subscribe, return code %d\n", rc);
-		finished = 1;
-	}
-}
-
+void connectToTopic(MQTTAsync client, char topic[]);
+void connlost(void *context, char *cause);
+int msgarrvd(void *context, char *topicName, int topicLen, MQTTAsync_message *message);
+void onDisconnectFailure(void* context, MQTTAsync_failureData* response);
+void onDisconnect(void* context, MQTTAsync_successData* response);
+void onSubscribe(void* context, MQTTAsync_successData* response);
+void onSubscribeFailure(void* context, MQTTAsync_failureData* response);
+void onConnectFailure(void* context, MQTTAsync_failureData* response);
+void onSendFailure(void* context, MQTTAsync_failureData* response);
+void onSend(void* context, MQTTAsync_successData* response);
+void onConnect(void* context, MQTTAsync_successData* response);
+void menu(int id);
+void connectToTopic(MQTTAsync client, char topic[]);
+int toInt(char *str);
+int createId(int a, int b);
